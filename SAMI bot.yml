@@ -9,24 +9,43 @@ dependencies:
 - current_identifier: null
   type: marketplace
   value:
-    marketplace_plugin_unique_identifier: langgenius/openai:0.2.6@e2665624a156f52160927bceac9e169bd7e5ae6b936ae82575e14c90af390e6e
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.5.6@6937ac6c3f88d0ef5021881b00eab58e0722e1b3cc186087b023688679abd074
     version: null
 kind: app
 model_config:
   agent_mode:
     enabled: false
-    prompt: null
-    strategy: null
+    max_iteration: 10
+    strategy: function_call
     tools: []
   annotation_reply:
     enabled: false
   chat_prompt_config: {}
   completion_prompt_config: {}
   dataset_configs:
+    datasets:
+      datasets: []
     retrieval_model: multiple
-  dataset_query_variable: null
+    top_k: 4
+  dataset_query_variable: ''
   external_data_tools: []
   file_upload:
+    allowed_file_extensions:
+    - .JPG
+    - .JPEG
+    - .PNG
+    - .GIF
+    - .WEBP
+    - .SVG
+    - .MP4
+    - .MOV
+    - .MPEG
+    - .WEBM
+    allowed_file_types: []
+    allowed_file_upload_methods:
+    - remote_url
+    - local_file
+    enabled: true
     image:
       detail: high
       enabled: false
@@ -34,15 +53,49 @@ model_config:
       transfer_methods:
       - remote_url
       - local_file
+    number_limits: 3
   model:
-    completion_params: {}
+    completion_params:
+      stop: []
     mode: chat
-    name: gpt-4
-    provider: langgenius/openai/openai
+    name: gemini-2.5-flash
+    provider: langgenius/gemini/google
   more_like_this:
     enabled: false
-  opening_statement: null
-  pre_prompt: null
+  opening_statement: Xin chào, mình là SAMI bot, mình có thể giúp gì được cho bạn
+    ?
+  pre_prompt: '# MỤC ĐÍCH
+
+    Bạn là một trợ lý AI tên là SAMI, hỗ trợ cho hệ thống "Smart Apartment Management
+    Interface".
+
+    Bạn đang nói chuyện với một người thuê nhà.
+
+
+    ## HƯỚNG DẪN TRÒ CHUYỆN
+
+    1. Trả lời thân thiện, ngắn gọn bằng Tiếng Việt.
+
+    2. CHỈ sử dụng dữ liệu trong "NGỮ CẢNH DỮ LIỆU" để trả lời.
+
+    3. Nếu câu hỏi không liên quan đến ngữ cảnh, hãy từ chối một cách lịch sự.
+
+
+    ## NGỮ CẢNH DỮ LIỆU
+
+    - Tên người thuê: {{tenant_name}}
+
+    - Ngày hôm nay: {{current_date}}
+
+    - Các hoá đơn chưa thanh toán:
+
+    {{unpaid_bills}}
+
+    - Thông tin hợp đồng: {{contract_info}}
+
+    - Thông tin liên hệ:
+
+    {{contacts}}'
   prompt_type: simple
   retriever_resource:
     enabled: true
@@ -54,8 +107,40 @@ model_config:
     enabled: false
   suggested_questions: []
   suggested_questions_after_answer:
-    enabled: false
+    enabled: true
   text_to_speech:
     enabled: false
-  user_input_form: []
+    language: ''
+    voice: ''
+  user_input_form:
+  - text-input:
+      default: ''
+      label: tenant_name
+      max_length: 48
+      required: true
+      variable: tenant_name
+  - text-input:
+      default: ''
+      label: current_date
+      max_length: 48
+      required: true
+      variable: current_date
+  - text-input:
+      default: ''
+      label: unpaid_bills
+      max_length: 48
+      required: true
+      variable: unpaid_bills
+  - text-input:
+      default: ''
+      label: contract_info
+      max_length: 48
+      required: true
+      variable: contract_info
+  - text-input:
+      default: ''
+      label: contacts
+      max_length: 48
+      required: true
+      variable: contacts
 version: 0.4.0
