@@ -67,7 +67,16 @@ components:
       enum: [active, inactive, requested, deactivated]
 
     # Define a Vehicle Request Object (for responses)
-    VehicleResponse:
+    VehicleRegistration:
+      type: object
+      properties:
+        assignment_id: { type: integer }
+        requested_by: { type: integer }
+        status: { $ref: '#/components/schemas/RegistrationStatusEnum' }
+        reason: { type: string, description: "JSON string of vehicle info" }
+        vehicles: { type: array, items: { type: object } }
+
+    Vehicle:
       type: object
       properties:
         vehicle_id: { type: integer }
@@ -77,21 +86,6 @@ components:
         brand: { type: string }
         color: { type: string }
         status: { $ref: '#/components/schemas/VehicleStatusEnum' }
-
-    VehicleStatsResponse:
-       type: object
-       properties:
-         total: { type: integer }
-         requested: { type: integer }
-         approved: { type: integer }
-         rejected: { type: integer }
-         byType:
-           type: array
-           items:
-             type: object
-             properties:
-               type: { $ref: '#/components/schemas/VehicleTypeEnum' }
-               count: { type: integer }
 
 # 3. Apply Security Globally (All tools require the tenant's token)
 security:
@@ -242,45 +236,35 @@ paths:
           description: "Not found."
 
 # VEHICLE MANAGEMENT
-  /api/vehicle:
+  /api/vehicle/registrations:
     get:
-      summary: "Get My Registered Vehicles"
-      description: "Gets a list of all vehicles (pending, approved, or rejected) registered by the logged-in tenant."
-      operationId: "getMyVehicles"
+      summary: "Get My Vehicle Registrations"
+      description: "Gets a list of all vehicle registration requests (pending, approved, etc.) by the tenant."
+      operationId: "getVehicleRegistrations"
       tags:
         - Vehicle
       parameters:
         - name: status
           in: query
-          description: "Filter by status (e.g., requested, approved)"
-          required: false
           schema:
-            $ref: '#/components/schemas/RegistrationStatusEnum' # Use the enum
-        - name: type
-          in: query
-          description: "Filter by vehicle type (e.g., car, motorcycle)"
-          required: false
-          schema:
-            $ref: '#/components/schemas/VehicleTypeEnum' # Use the enum
+            $ref: '#/components/schemas/RegistrationStatusEnum'
       responses:
         '200':
-          description: "A list of the tenant's vehicles."
+          description: "A list of registrations."
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  vehicles:
+                  registrations:
                     type: array
                     items:
-                      $ref: '#/components/schemas/VehicleResponse'
-                  pagination: { type: object }
-        '401': { description: "Unauthorized" }
+                      $ref: '#/components/schemas/VehicleRegistration'
 
     post:
-      summary: "Register a New Vehicle"
-      description: "Registers a new vehicle for the tenant. The status will be 'requested'."
-      operationId: "registerNewVehicle"
+      summary: "Create a New Vehicle Registration Request"
+      description: "Submits a new request to register a vehicle. This does NOT approve the vehicle, it only starts the process."
+      operationId: "createVehicleRegistration"
       tags:
         - Vehicle
       requestBody:
@@ -301,109 +285,139 @@ paths:
                 color:
                   type: string
                   description: "Màu xe (e.g., Đen, Trắng)"
+                start_date:
+                  type: string
+                  format: date
+                  description: "Optional: Ngày bắt đầu đăng ký gửi xe (YYYY-MM-DD)"
+                end_date:
+                  type: string
+                  format: date
+                  description: "Optional: Ngày kết thúc đăng ký gửi xe (YYYY-MM-DD)"
                 note:
                   type: string
-                  description: "Ghi chú thêm (e.g., Xe Lead)"
               required:
                 - type
                 - license_plate
       responses:
-        '201':
-          description: "Vehicle registered successfully."
-        '400':
-          description: "Invalid data (e.g., license plate already exists)."
-        '401': { description: "Unauthorized" }
+        '201': { description: "Registration request created successfully." }
+        '400': { description: "Invalid data (e.g., license plate already exists)." }
 
-  /api/vehicle/{id}:
+  /api/vehicle/registrations/{id}:
     get:
-      summary: "Get My Vehicle By ID"
-      description: "Gets the details of a single vehicle, if the tenant owns it."
-      operationId: "getMyVehicleById"
+      summary: "Get My Registration by ID"
+      description: "Gets details of a single vehicle registration request."
+      operationId: "getVehicleRegistrationById"
       tags:
         - Vehicle
       parameters:
         - name: id
           in: path
           required: true
-          description: "The vehicle_id of the vehicle to view."
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
-        '200':
-          description: "Vehicle details retrieved."
-        '401': { description: "Unauthorized" }
-        '404': { description: "Vehicle not found." }
+        '200': { description: "Registration details." }
+        '404': { description: "Not found." }
 
     put:
-      summary: "Update My Pending Vehicle"
-      description: "Updates details (brand, color, etc.) for a vehicle that is still in 'requested' status."
-      operationId: "updateMyVehicle"
+      summary: "Update My Pending Registration"
+      description: "Updates details for a registration that is still in 'requested' status."
+      operationId: "updateVehicleRegistration"
       tags:
         - Vehicle
       parameters:
         - name: id
           in: path
           required: true
-          description: "The vehicle_id of the vehicle to update."
-          schema:
-            type: integer
+          schema: { type: integer }
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                type:
-                  $ref: '#/components/schemas/VehicleTypeEnum'
-                license_plate:
-                  type: string
-                brand:
-                  type: string
-                color:
-                  type: string
-                note:
-                  type: string
+                type: { $ref: '#/components/schemas/VehicleTypeEnum' }
+                license_plate: { type: string }
+                brand: { type: string }
+                color: { type: string }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                note: { type: string }
       responses:
-        '200':
-          description: "Updated successfully."
-        '403':
-          description: "Forbidden (e.g., trying to update an 'approved' vehicle)."
-        '401': { description: "Unauthorized" }
-        '404': { description: "Vehicle not found." }
+        '200': { description: "Updated successfully." }
+        '403': { description: "Forbidden (e.g., trying to update an 'approved' registration)." }
 
     delete:
-      summary: "Delete My Vehicle Registration"
-      description: "Deletes a vehicle registration that is in 'requested' or 'rejected' status. Fails if the vehicle is 'approved'."
-      operationId: "deleteMyVehicle"
+      summary: "Delete My Registration Request"
+      description: "Deletes a registration that is in 'requested' or 'rejected' status."
+      operationId: "deleteVehicleRegistration"
       tags:
         - Vehicle
       parameters:
         - name: id
           in: path
           required: true
-          description: "The vehicle_id of the vehicle to delete."
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
-        '200':
-          description: "Deleted successfully."
-        '403':
-          description: "Forbidden (e.g., status is 'approved')."
-        '401': { description: "Unauthorized" }
-        '404': { description: "Vehicle not found." }
+        '200': { description: "Deleted successfully." }
+        '403': { description: "Forbidden (e.g., status is 'approved')." }
 
-  /api/vehicle/stats:
+  /api/vehicle/registrations/{id}/cancel:
+    post:
+      summary: "Cancel My Registration"
+      description: "Allows a tenant to cancel their own 'requested' registration."
+      operationId: "cancelVehicleRegistration"
+      tags:
+        - Vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: "Lý do huỷ (optional)"
+      responses:
+        '200': { description: "Cancelled successfully." }
+        '403': { description: "Forbidden (e.g., trying to cancel an 'approved' registration)." }
+
+  /api/vehicle:
     get:
-      summary: "Get My Vehicle Statistics"
-      description: "Gets a quick count of the tenant's vehicles (total, approved, pending, etc.)."
-      operationId: "getMyVehicleStats"
+      summary: "Get My Active Vehicles"
+      description: "Gets a list of all *approved and active* vehicles registered by the tenant."
+      operationId: "getVehicles"
       tags:
         - Vehicle
       responses:
         '200':
-          description: "Statistics retrieved successfully."
+          description: "A list of active vehicles."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VehicleStatsResponse'
-        '401': { description: "Unauthorized" }
+                type: object
+                properties:
+                  vehicles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vehicle'
+
+  /api/vehicle/{id}:
+    get:
+      summary: "Get My Active Vehicle by ID"
+      description: "Gets details of a single *approved and active* vehicle."
+      operationId: "getVehicleById"
+      tags:
+        - Vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: "Vehicle details." }
+        '404': { description: "Not found." }

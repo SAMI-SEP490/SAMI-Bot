@@ -20,7 +20,6 @@ model_config:
     strategy: function_call
     tools:
     - enabled: true
-      isDeleted: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
@@ -29,7 +28,6 @@ model_config:
       tool_name: getTenantContext
       tool_parameters: {}
     - enabled: true
-      isDeleted: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
@@ -38,7 +36,6 @@ model_config:
       tool_name: getMyMaintenanceRequests
       tool_parameters: {}
     - enabled: true
-      isDeleted: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
@@ -52,7 +49,6 @@ model_config:
         room_id: ''
         title: ''
     - enabled: true
-      isDeleted: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
@@ -66,7 +62,6 @@ model_config:
         priority: ''
         title: ''
     - enabled: true
-      isDeleted: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
@@ -75,64 +70,62 @@ model_config:
       tool_name: deleteMyMaintenanceRequest
       tool_parameters:
         delete_id: ''
-    - enabled: true
-      isDeleted: false
+    - enabled: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
       provider_type: api
-      tool_label: getMyVehicles
-      tool_name: getMyVehicles
+      tool_label: getVehicleRegistrations
+      tool_name: getVehicleRegistrations
       tool_parameters:
         status: ''
-        type: ''
-    - enabled: true
-      isDeleted: false
+    - enabled: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
       provider_type: api
-      tool_label: registerNewVehicle
-      tool_name: registerNewVehicle
+      tool_label: createVehicleRegistration
+      tool_name: createVehicleRegistration
       tool_parameters:
         brand: ''
         color: ''
+        end_date: ''
         license_plate: ''
         note: ''
+        start_date: ''
         type: ''
-    - enabled: true
-      isDeleted: false
+    - enabled: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
       provider_type: api
-      tool_label: updateMyVehicle
-      tool_name: updateMyVehicle
+      tool_label: getVehicleRegistrationById
+      tool_name: getVehicleRegistrationById
+      tool_parameters:
+        id: ''
+    - enabled: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: updateVehicleRegistration
+      tool_name: updateVehicleRegistration
       tool_parameters:
         brand: ''
         color: ''
+        end_date: ''
         id: ''
         license_plate: ''
         note: ''
+        start_date: ''
         type: ''
-    - enabled: true
-      isDeleted: false
+    - enabled: false
       notAuthor: false
       provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
       provider_name: SAMI Bot Tools
       provider_type: api
-      tool_label: deleteMyVehicle
-      tool_name: deleteMyVehicle
-      tool_parameters:
-        id: ''
-    - enabled: true
-      isDeleted: false
-      notAuthor: false
-      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
-      provider_name: SAMI Bot Tools
-      provider_type: api
-      tool_label: getMyVehicleStats
-      tool_name: getMyVehicleStats
+      tool_label: getVehicles
+      tool_name: getVehicles
       tool_parameters: {}
   annotation_reply:
     enabled: false
@@ -210,23 +203,15 @@ model_config:
     \    * Đầu tiên, gọi `getMyMaintenanceRequests` để lấy `request_id` và `status`.\n\
     \    * Hỏi người dùng xác nhận `request_id` họ muốn xóa. Nếu nó `pending`, hãy\
     \ gọi `deleteMyMaintenanceRequest(id=...)`.\n\n**3. Công cụ Xe cộ (Vehicle Tools):**\n\
-    * **`registerNewVehicle` (Đăng ký xe mới):**\n    * Hỏi người dùng 4 thông tin:\
-    \ `type` (loại xe: car, motorcycle,...), `license_plate` (biển số xe), `brand`\
-    \ (hãng xe), và `color` (màu xe).\n    * Sau khi có đủ thông tin, hãy gọi `registerNewVehicle`\
-    \ với các thông tin đó.\n* **`getMyVehicles` (Kiểm tra xe):**\n    * Nếu người\
-    \ dùng hỏi về xe của họ, hãy gọi công cụ này để xem danh sách xe và trạng thái\
-    \ (`status`).\n* **`deleteMyVehicle` (Xóa xe):**\n    * Người dùng chỉ có thể\
-    \ xóa xe có trạng thái `requested` hoặc `rejected`.\n    * Hỏi người dùng `vehicle_id`\
-    \ (lấy từ `getMyVehicles`) mà họ muốn xóa.\n    * Nếu trạng thái hợp lệ, hãy hỏi\
-    \ xác nhận rồi mới gọi `deleteMyVehicle(id=...)`.\n\n--- HƯỚNG DẪN DỮ LIỆU TỪ\
-    \ getTenantContext ---\nĐây là ý nghĩa của dữ liệu JSON bạn nhận được từ `getTenantContext`:\n\
-    \n* `tenant_name` & `room_number`: Tên và số phòng của người dùng.\n* `unpaid_bills`:\
-    \ Danh sách các hoá đơn CHƯA THANH TOÁN. Nếu danh sách này trống, có nghĩa là\
-    \ họ không nợ tiền.\n* `active_contract`: Thông tin hợp đồng của họ (ngày hết\
-    \ hạn, tiền thuê).\n* `contacts`: Danh sách số điện thoại của Quản lý hoặc Chủ\
-    \ nhà để người dùng liên hệ.\n* `pending_maintenance`: Danh sách các yêuF cầu\
-    \ bảo trì ĐANG CHỜ XỬ LÝ.\n* `registered_vehicles`: Danh sách các xe của người\
-    \ dùng và trạng thái của chúng (e.g., 'requested', 'approved')."
+    Tạm thời bảo với người dùng không hỗ trợ thao tác với xe cộ.\n\n--- HƯỚNG DẪN\
+    \ DỮ LIỆU TỪ getTenantContext ---\nĐây là ý nghĩa của dữ liệu JSON bạn nhận được\
+    \ từ `getTenantContext`:\n\n* `tenant_name` & `room_number`: Tên và số phòng của\
+    \ người dùng.\n* `unpaid_bills`: Danh sách các hoá đơn CHƯA THANH TOÁN. Nếu danh\
+    \ sách này trống, có nghĩa là họ không nợ tiền.\n* `active_contract`: Thông tin\
+    \ hợp đồng của họ (ngày hết hạn, tiền thuê).\n* `contacts`: Danh sách số điện\
+    \ thoại của Quản lý hoặc Chủ nhà để người dùng liên hệ.\n* `pending_maintenance`:\
+    \ Danh sách các yêuF cầu bảo trì ĐANG CHỜ XỬ LÝ.\n* `registered_vehicles`: Danh\
+    \ sách các xe của người dùng và trạng thái của chúng (e.g., 'requested', 'approved')."
   prompt_type: simple
   retriever_resource:
     enabled: true
