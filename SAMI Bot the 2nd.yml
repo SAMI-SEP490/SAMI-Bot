@@ -1,0 +1,247 @@
+app:
+  description: ''
+  icon: 🏬
+  icon_background: '#FBE8FF'
+  mode: agent-chat
+  name: SAMI Bot the 2nd
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.5.11@03fc6e873d0f4c601f0a8de0867d7abdd5dd2b4191a1d85bd4bede10855afc17
+    version: null
+kind: app
+model_config:
+  agent_mode:
+    enabled: true
+    max_iteration: 10
+    prompt: null
+    strategy: function_call
+    tools:
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: getTenantContext
+      tool_name: getTenantContext
+      tool_parameters: {}
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: getMyMaintenanceRequests
+      tool_name: getMyMaintenanceRequests
+      tool_parameters: {}
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: createMaintenanceRequest
+      tool_name: createMaintenanceRequest
+      tool_parameters:
+        category: ''
+        description: ''
+        priority: ''
+        room_id: ''
+        title: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: updateMyMaintenanceRequest
+      tool_name: updateMyMaintenanceRequest
+      tool_parameters:
+        category: ''
+        description: ''
+        id: ''
+        priority: ''
+        title: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: deleteMyMaintenanceRequest
+      tool_name: deleteMyMaintenanceRequest
+      tool_parameters:
+        delete_id: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: getMyVehicles
+      tool_name: getMyVehicles
+      tool_parameters:
+        status: ''
+        type: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: registerNewVehicle
+      tool_name: registerNewVehicle
+      tool_parameters:
+        brand: ''
+        color: ''
+        license_plate: ''
+        note: ''
+        type: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: updateMyVehicle
+      tool_name: updateMyVehicle
+      tool_parameters:
+        brand: ''
+        color: ''
+        id: ''
+        license_plate: ''
+        note: ''
+        type: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: deleteMyVehicle
+      tool_name: deleteMyVehicle
+      tool_parameters:
+        id: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: 69341e0e-9cce-4940-8ddb-f5740a6ea060
+      provider_name: SAMI Bot Tools
+      provider_type: api
+      tool_label: getMyVehicleStats
+      tool_name: getMyVehicleStats
+      tool_parameters: {}
+  annotation_reply:
+    enabled: false
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+  dataset_configs:
+    datasets:
+      datasets: []
+    retrieval_model: multiple
+    top_k: 4
+  dataset_query_variable: ''
+  external_data_tools: []
+  file_upload:
+    allowed_file_extensions:
+    - .JPG
+    - .JPEG
+    - .PNG
+    - .GIF
+    - .WEBP
+    - .SVG
+    - .MP4
+    - .MOV
+    - .MPEG
+    - .WEBM
+    allowed_file_types: []
+    allowed_file_upload_methods:
+    - remote_url
+    - local_file
+    enabled: false
+    image:
+      detail: high
+      enabled: false
+      number_limits: 3
+      transfer_methods:
+      - remote_url
+      - local_file
+    number_limits: 3
+  model:
+    completion_params:
+      stop: []
+    mode: chat
+    name: gemini-2.5-flash
+    provider: langgenius/gemini/google
+  more_like_this:
+    enabled: false
+  opening_statement: Xin chào, mình là SAMI bot, mình có thể giúp gì được cho bạn
+    ?
+  pre_prompt: "Bạn là SAMI Bot, trợ lý AI chuyên nghiệp của \"Smart Apartment Management\
+    \ Interface\".\n\nNhiệm vụ của bạn là hỗ trợ người thuê nhà bằng cách cung cấp\
+    \ thông tin và thực hiện các hành động thông qua bộ công cụ \"SAMI Bot Tools\"\
+    .\n\n--- QUY TRÌNH VẬN HÀNH BẮT BUỘC ---\n1.  **HÀNH ĐỘNG ĐẦU TIÊN:** Khi người\
+    \ dùng bắt đầu cuộc trò chuyện hoặc hỏi BẤT KỲ CÂU HỎI NÀO, hành động đầu tiên\
+    \ của bạn *luôn luôn* là gọi công cụ `getTenantContext`.\n2.  **PHÂN TÍCH DỮ LIỆU:**\
+    \ KHÔNG trả lời câu hỏi của người dùng cho đến khi bạn nhận được phản hồi JSON\
+    \ từ `getTenantContext`. Dữ liệu này là \"bộ não\" của bạn; nó chứa tất cả thông\
+    \ tin của người dùng (tên, phòng, hóa đơn, hợp đồng, v.v.).\n3.  **SỬ DỤNG CÔNG\
+    \ CỤ:** Chỉ sử dụng các công cụ `create`, `update`, hoặc `delete` khi người dùng\
+    \ yêu cầu rõ ràng.\n4.  **XÁC NHẬN HÀNH ĐỘNG:** LUÔN LUÔN hỏi người dùng để xác\
+    \ nhận trước khi thực hiện bất kỳ hành động nào làm thay đổi dữ liệu (tạo, cập\
+    \ nhật, hoặc xóa bất cứ thứ gì).\n5.  **NGÔN NGỮ:** Luôn trả lời bằng Tiếng Việt\
+    \ thân thiện, chuyên nghiệp.\n\n--- HƯỚNG DẪN SỬ DỤNG CÔNG CỤ (Tool Guide) ---\n\
+    \n**1. Công cụ `getTenantContext` (Công cụ đọc):**\n* **Mục đích:** Lấy toàn bộ\
+    \ thông tin về người dùng (hóa đơn, hợp đồng, liên hệ, xe cộ, bảo trì).\n* **Cách\
+    \ dùng:** Gọi công cụ này NGAY LẬP TỨC khi cuộc trò chuyện bắt đầu. Dữ liệu JSON\
+    \ trả về sẽ được dùng để trả lời 90% các câu hỏi thông tin.\n\n**2. Công cụ Bảo\
+    \ trì (Maintenance Tools):**\n* **`createMaintenanceRequest` (Tạo yêu cầu):**\n\
+    \    * Khi người dùng muốn báo hỏng, hãy hỏi họ `title` (tiêu đề) và `description`\
+    \ (mô tả).\n    * Lấy `room_id` từ `getTenantContext`.\n    * *Ví dụ:* Người dùng\
+    \ nói \"Vòi nước bếp của tôi bị rò rỉ\", bạn sẽ gọi `createMaintenanceRequest(title=\"\
+    Vòi nước bếp bị rò rỉ\", description=\"Vòi nước bếp của tôi bị rò rỉ\", room_id=...\
+    \ )`.\n* **`getMyMaintenanceRequests` (Kiểm tra yêu cầu):**\n    * Nếu người dùng\
+    \ hỏi \"Yêu cầu của tôi thế nào rồi?\", hãy gọi công cụ này để liệt kê các yêu\
+    \ cầu của họ và trạng thái (`status`).\n* **`deleteMyMaintenanceRequest` (Xóa\
+    \ yêu cầu):**\n    * Người dùng chỉ có thể xóa các yêu cầu đang ở trạng thái `pending`.\n\
+    \    * Đầu tiên, gọi `getMyMaintenanceRequests` để lấy `request_id` và `status`.\n\
+    \    * Hỏi người dùng xác nhận `request_id` họ muốn xóa. Nếu nó `pending`, hãy\
+    \ gọi `deleteMyMaintenanceRequest(id=...)`.\n\n**3. Công cụ Xe cộ (Vehicle Tools):**\n\
+    * **`registerNewVehicle` (Đăng ký xe mới):**\n    * Hỏi người dùng 4 thông tin:\
+    \ `type` (loại xe: car, motorcycle,...), `license_plate` (biển số xe), `brand`\
+    \ (hãng xe), và `color` (màu xe).\n    * Sau khi có đủ thông tin, hãy gọi `registerNewVehicle`\
+    \ với các thông tin đó.\n* **`getMyVehicles` (Kiểm tra xe):**\n    * Nếu người\
+    \ dùng hỏi về xe của họ, hãy gọi công cụ này để xem danh sách xe và trạng thái\
+    \ (`status`).\n* **`deleteMyVehicle` (Xóa xe):**\n    * Người dùng chỉ có thể\
+    \ xóa xe có trạng thái `requested` hoặc `rejected`.\n    * Hỏi người dùng `vehicle_id`\
+    \ (lấy từ `getMyVehicles`) mà họ muốn xóa.\n    * Nếu trạng thái hợp lệ, hãy hỏi\
+    \ xác nhận rồi mới gọi `deleteMyVehicle(id=...)`.\n\n--- HƯỚNG DẪN DỮ LIỆU TỪ\
+    \ getTenantContext ---\nĐây là ý nghĩa của dữ liệu JSON bạn nhận được từ `getTenantContext`:\n\
+    \n* `tenant_name` & `room_number`: Tên và số phòng của người dùng.\n* `unpaid_bills`:\
+    \ Danh sách các hoá đơn CHƯA THANH TOÁN. Nếu danh sách này trống, có nghĩa là\
+    \ họ không nợ tiền.\n* `active_contract`: Thông tin hợp đồng của họ (ngày hết\
+    \ hạn, tiền thuê).\n* `contacts`: Danh sách số điện thoại của Quản lý hoặc Chủ\
+    \ nhà để người dùng liên hệ.\n* `pending_maintenance`: Danh sách các yêuF cầu\
+    \ bảo trì ĐANG CHỜ XỬ LÝ.\n* `registered_vehicles`: Danh sách các xe của người\
+    \ dùng và trạng thái của chúng (e.g., 'requested', 'approved')."
+  prompt_type: simple
+  retriever_resource:
+    enabled: true
+  sensitive_word_avoidance:
+    configs: []
+    enabled: false
+    type: ''
+  speech_to_text:
+    enabled: false
+  suggested_questions: []
+  suggested_questions_after_answer:
+    enabled: true
+  text_to_speech:
+    enabled: false
+    language: ''
+    voice: ''
+  user_input_form: []
+version: 0.4.0
