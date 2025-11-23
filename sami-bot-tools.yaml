@@ -3,26 +3,25 @@
 #
 openapi: 3.0.0
 info:
-  title: "SAMI Bot Tools"
-  description: "API for the Smart Apartment Management Interface, providing tools for the Dify.ai tenant agent. All endpoints require tenant authentication."
-  version: "1.1.0"
+  title: "SAMI Bot API"
+  description: "Dedicated API for the Dify.ai agent, authenticated via Bot API Key."
+  version: "2.0.0"
 
 servers:
   - url: <ngrok_url>/api
 
 components:
   securitySchemes:
-    TenantAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: "Tenant's JWT access token obtained after login."
+    BotAuth:
+      type: apiKey
+      in: header
+      name: x-bot-api-key
       
   schemas:
     # --- Enums ---
     MaintenanceCategoryEnum:
       type: string
-      enum: [plumbing, electrical, hvac, carpentry, cleaning, other]
+      enum: [plumbing, electrical, hvac, appliance, structural, cleaning, other]
     MaintenancePriorityEnum:
       type: string
       enum: [low, normal, high, urgent]
@@ -91,22 +90,29 @@ components:
         - comment
 
 security:
-  - TenantAuth: []
+  - BotAuth: []
 
 # --- 4. Define the API Endpoints (The "Tools") ---
 paths:
 
   # --- TOOL 1: THE ONLY READ TOOL ---
-  /tenants/ai-context:
+  /api/bot/context:
     get:
-      summary: "Get All Tenant Context (Call this FIRST)"
-      description: "CRITICAL: Call this tool FIRST in any conversation. It gets all data about the logged-in tenant (name, room ID, unpaid bills, contract, contacts, maintenance, and vehicle info)."
+      summary: "Get Tenant Context (Bot API)"
+      description: "CRITICAL: Call this tool FIRST. Gets all data about the tenant specified by `tenant_user_id`."
       operationId: "getTenantContext"
       tags:
         - Tenant Info
+      parameters:
+        - name: tenant_user_id
+          in: query
+          required: true
+          description: "The ID of the tenant chatting with the bot."
+          schema:
+            type: integer
       responses:
         '200':
-          description: "Successful retrieval of all tenant context data."
+          description: "Successful retrieval."
           content:
             application/json:
               schema:
@@ -128,64 +134,50 @@ paths:
                       pending_registrations: { type: array, items: { $ref: '#/components/schemas/PendingRegistration' } }
                       active_vehicles: { type: array, items: { $ref: '#/components/schemas/ActiveVehicle' } }
         '401':
-          description: "Unauthorized. The TenantAuth token is missing or invalid."
+          description: "Unauthorized. The key is missing or invalid."
 
   # --- TOOL 2: CREATE MAINTENANCE ---
-  /maintenance:
+  /api/bot/maintenance/create:
     post:
       summary: "Create Maintenance Request"
-      description: "Creates a new maintenance request for the logged-in tenant. The tenant's room_id (from getTenantContext) will be used by the API."
       operationId: "createMaintenanceRequest"
-      tags:
-        - Maintenance
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [tenant_user_id, title]
               properties:
-                title:
-                  type: string
-                  description: "Mô tả ngắn gọn sự cố (e.g., Vòi nước bếp bị rò rỉ)"
-                description:
-                  type: string
-                  description: "Mô tả chi tiết hơn về sự cố."
-                category:
-                  $ref: '#/components/schemas/MaintenanceCategoryEnum'
-                priority:
-                  $ref: '#/components/schemas/MaintenancePriorityEnum'
-                room_id:
-                  type: integer
-                  description: "ID của phòng (Lấy từ `getTenantContext`)"
-              required:
-                - title
-                - room_id
+                tenant_user_id: { type: integer }
+                title: { type: string }
+                description: { type: string }
+                category: { $ref: '#/components/schemas/MaintenanceCategoryEnum' }
+                priority: { $ref: '#/components/schemas/MaintenancePriorityEnum' }
+                room_id: { type: integer }
       responses:
-        '201': { description: "Request created successfully." }
+        '201': { description: "Created" }
         '401': { description: "Unauthorized." }
 
   # --- TOOL 3: UPDATE MAINTENANCE ---
   /maintenance/{id}:
     put:
-      summary: "Update My Maintenance Request"
-      description: "Allows a tenant to update their *own* PENDING request (e.g., change the description or priority). Cannot update status."
-      operationId: "updateMyMaintenanceRequest"
-      tags:
-        - Maintenance
+      summary: "Update Maintenance Request"
+      operationId: "updateMaintenanceRequest"
       parameters:
         - name: id
           in: path
           required: true
-          description: "The request_id of the maintenance request to update (Get from `pending_maintenance` in context)."
-          schema:
-            type: integer
+          schema: { type: integer }
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [tenant_user_id]
               properties:
+                tenant_user_id: { type: integer }
                 title: { type: string }
                 description: { type: string }
                 category: { $ref: '#/components/schemas/MaintenanceCategoryEnum' }
@@ -195,52 +187,52 @@ paths:
           
   # --- TOOL 4: DELETE MAINTENANCE ---
     delete:
-      summary: "Delete My Maintenance Request"
-      description: "Allows a tenant to delete their *own* PENDING request."
-      operationId: "deleteMyMaintenanceRequest"
-      tags:
-        - Maintenance
+      summary: "Delete Maintenance Request"
+      operationId: "deleteMaintenanceRequest"
       parameters:
         - name: id
           in: path
           required: true
-          description: "The request_id of the maintenance request to delete (Get from `pending_maintenance` in context)."
-          schema:
-            type: integer
-      responses:
-        '200': { description: "Deleted successfully." }
-
-  # --- TOOL 5: CREATE VEHICLE REGISTRATION ---
-  /vehicle/registrations:
-    post:
-      summary: "Create a New Vehicle Registration Request"
-      description: "Submits a new request to register a vehicle. Status will be 'requested'."
-      operationId: "createVehicleRegistration"
-      tags:
-        - Vehicle
+          schema: { type: integer }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [tenant_user_id]
               properties:
+                tenant_user_id: { type: integer }
+      responses:
+        '200': { description: "Deleted successfully." }
+
+  # --- TOOL 5: CREATE VEHICLE REGISTRATION ---
+  /api/bot/vehicle-registration/create:
+    post:
+      summary: "Register New Vehicle"
+      operationId: "createVehicleRegistration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_user_id, type, license_plate]
+              properties:
+                tenant_user_id: { type: integer }
                 type: { $ref: '#/components/schemas/VehicleTypeEnum' }
                 license_plate: { type: string }
                 brand: { type: string }
                 color: { type: string }
                 note: { type: string }
-              required:
-                - type
-                - license_plate
       responses:
         '201': { description: "Registration request created." }
 
   # --- TOOL 6: UPDATE VEHICLE REGISTRATION ---
-  /vehicle/registrations/{id}:
+  /api/bot/vehicle-registration/{id}:
     put:
-      summary: "Update My Pending Registration"
-      description: "Updates details for a registration that is still in 'requested' status."
+      summary: "Update Vehicle Registration"
+      description: "Updates a pending vehicle registration. Only works if status is 'requested'."
       operationId: "updateVehicleRegistration"
       tags:
         - Vehicle
@@ -248,99 +240,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: "The registration_id of the request to update (Get from `pending_registrations` in context)."
-          schema:
-            type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                type: { $ref: '#/components/schemas/VehicleTypeEnum' }
-                license_plate: { type: string }
-                brand: { type: string }
-                color: { type: string }
-                note: { type: string }
-      responses:
-        '200': { description: "Updated successfully." }
-
-  # --- TOOL 7: DELETE VEHICLE REGISTRATION ---
-    delete:
-      summary: "Delete My Registration Request"
-      description: "Deletes a registration that is in 'requested' or 'rejected' status."
-      operationId: "deleteVehicleRegistration"
-      tags:
-        - Vehicle
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The registration_id of the request to delete (Get from `pending_registrations` in context)."
-          schema:
-            type: integer
-      responses:
-        '200': { description: "Deleted successfully." }
-
-  # --- TOOL 8: CANCEL VEHICLE REGISTRATION ---
-  /vehicle/registrations/{id}/cancel:
-    post:
-      summary: "Cancel My Registration"
-      description: "Allows a tenant to cancel their own 'requested' registration."
-      operationId: "cancelVehicleRegistration"
-      tags:
-        - Vehicle
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The registration_id of the request to cancel (Get from `pending_registrations` in context)."
-          schema:
-            type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason: { type: string, description: "Lý do huỷ (optional)" }
-      responses:
-        '200': { description: "Cancelled successfully." }
-
-  # --- REGULATIONS Tools ---
-  /regulation:
-    get:
-      summary: "Get List of Regulation Titles"
-      description: "Gets a list of all regulations. The agent should filter this list in its mind to show tenants only 'published' regulations where 'target' is 'all' or 'tenants'."
-      operationId: "getAllRegulations"
-      tags:
-        - Regulations
-      responses:
-        '200':
-          description: "A list of regulation titles and details."
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/RegulationTitle'
-        '401': { description: "Unauthorized" }
-
-  /regulation/{id}/feedbacks:
-    post:
-      summary: "Add Feedback to a Regulation"
-      description: "Allows a tenant to add a comment/feedback to a specific regulation."
-      operationId: "addRegulationFeedback"
-      tags:
-        - Regulations
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The regulation_id to add feedback to."
+          description: "The registration assignment_id to update."
           schema:
             type: integer
       requestBody:
@@ -348,7 +248,120 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateFeedback'
+              type: object
+              required: 
+                - tenant_user_id
+              properties:
+                tenant_user_id:
+                  type: integer
+                  description: "The ID of the tenant attempting to update the request."
+                type:
+                  $ref: '#/components/schemas/VehicleTypeEnum'
+                license_plate:
+                  type: string
+                brand:
+                  type: string
+                color:
+                  type: string
+                note:
+                  type: string
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: "Updated successfully."
+        '400':
+          description: "Validation error or invalid state."
+        '403':
+          description: "Forbidden (e.g., registration not owned by tenant)."
+
+  # --- TOOL 7: DELETE VEHICLE REGISTRATION ---
+    # delete:
+    #   summary: "Delete My Registration Request"
+    #   description: "Deletes a registration that is in 'requested' or 'rejected' status."
+    #   operationId: "deleteVehicleRegistration"
+    #   tags:
+    #     - Vehicle
+    #   parameters:
+    #     - name: id
+    #       in: path
+    #       required: true
+    #       description: "The registration_id of the request to delete (Get from `pending_registrations` in context)."
+    #       schema:
+    #         type: integer
+    #   responses:
+    #     '200': { description: "Deleted successfully." }
+
+  # --- TOOL 8: CANCEL VEHICLE REGISTRATION ---
+  /api/bot/vehicle-registration/{id}/cancel:
+    post:
+      summary: "Cancel Vehicle Registration"
+      description: "Cancels a pending ('requested') vehicle registration."
+      operationId: "cancelVehicleRegistrationByBot"
+      tags:
+        - Vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "The registration assignment_id to cancel."
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenant_user_id
+              properties:
+                tenant_user_id:
+                  type: integer
+                  description: "The ID of the tenant cancelling the request."
+                cancellation_reason:
+                  type: string
+                  description: "Reason for cancellation (optional)."
+      responses:
+        '200':
+          description: "Cancelled successfully."
+        '400':
+          description: "Validation error or invalid state."
+        '403':
+          description: "Forbidden."
+
+  # --- REGULATIONS Tools ---
+  /api/bot/regulations:
+    get:
+      summary: "Get Regulations List"
+      operationId: "getRegulations"
+      responses:
+        '200': { description: "Success" }
+        '401': { description: "Unauthorized" }
+
+  /api/bot/regulation/{id}/feedback:
+    post:
+      summary: "Add Regulation Feedback"
+      operationId: "addRegulationFeedback"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_user_id, comment]
+              properties:
+                tenant_user_id: { type: integer }
+                comment: { type: string }
       responses:
         '201':
           description: "Feedback added successfully."
