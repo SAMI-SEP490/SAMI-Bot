@@ -3,12 +3,12 @@
 #
 openapi: 3.0.0
 info:
-  title: "SAMI Bot API"
+  title: "SAMI Bot Tools"
   description: "Dedicated API for the Dify.ai agent, authenticated via Bot API Key."
-  version: "2.0.0"
+  version: "2.0.1"
 
 servers:
-  - url: <ngrok_url>/api
+  - url: <ngrok_url>
 
 components:
   securitySchemes:
@@ -160,7 +160,7 @@ paths:
         '401': { description: "Unauthorized." }
 
   # --- TOOL 3: UPDATE MAINTENANCE ---
-  /maintenance/{id}:
+  /api/bot/maintenance/{id}:
     put:
       summary: "Update Maintenance Request"
       operationId: "updateMaintenanceRequest"
@@ -301,7 +301,7 @@ paths:
     post:
       summary: "Cancel Vehicle Registration"
       description: "Cancels a pending ('requested') vehicle registration."
-      operationId: "cancelVehicleRegistrationByBot"
+      operationId: "cancelVehicleRegistration"
       tags:
         - Vehicle
       parameters:
@@ -338,7 +338,7 @@ paths:
   /api/bot/regulations:
     get:
       summary: "Get Regulations List"
-      operationId: "getRegulations"
+      operationId: "getAllRegulations"
       responses:
         '200': { description: "Success" }
         '401': { description: "Unauthorized" }
