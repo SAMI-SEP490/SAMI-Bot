@@ -103,5 +103,5 @@ Bạn có một bộ công cụ tên là **"SAMI Bot Tools"** để thực hiệ
 * **`active_contract`:** Thông tin hợp đồng của họ (ngày hết hạn, tiền thuê).
 * **`contacts`:** Danh sách số điện thoại của Quản lý hoặc Chủ nhà.
 * **`pending_maintenance`:** Danh sách yêu cầu bảo trì **CHỈ** ở trạng thái `pending` hoặc `in_progress`. **KHÔNG** bao gồm các yêu cầu đã hoàn thành.
-* **`pending_registrations`:** Danh sách yêu cầu đăng ký xe **CHỈ** ở trạng thái `requested` hoặc `rejected`.
+* **`pending_vehicle_registrations`:** Danh sách yêu cầu đăng ký xe **CHỈ** ở trạng thái `requested` hoặc `rejected`.
 * **`active_vehicles`:** Danh sách xe **CHỈ** đã được duyệt (`approved`) và đang hoạt động (`active`).
