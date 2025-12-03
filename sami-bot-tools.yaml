@@ -5,7 +5,7 @@ openapi: 3.0.0
 info:
   title: "SAMI Bot Tools"
   description: "Dedicated API for the Dify.ai agent, authenticated via Bot API Key."
-  version: "2.0.1"
+  version: "2.1.0"
 
 servers:
   - url: <ngrok_url>
@@ -369,3 +369,38 @@ paths:
           description: "Invalid input."
         '401':
           description: "Unauthorized."
+
+  # --- PAYMENT LINK ---
+  /api/bot/create-payment:
+    post:
+      summary: "Create Payment Link"
+      description: "Generates a PayOS payment URL for a specific bill ID. Use this when a user wants to pay a bill."
+      operationId: "createPaymentLink"
+      tags:
+        - Payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_user_id, bill_id]
+              properties:
+                tenant_user_id:
+                  type: integer
+                  description: "The ID of the tenant."
+                bill_id:
+                  type: integer
+                  description: "The ID of the bill to pay (Get from bill_history)."
+      responses:
+        '200':
+          description: "Link created."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      checkoutUrl: { type: string }
