@@ -1,11 +1,8 @@
-#
-# OpenAPI 3.0 Specification for SAMI Tenant Agent
-#
 openapi: 3.0.0
 info:
   title: "SAMI Bot Tools"
-  description: "Dedicated API for the Dify.ai agent, authenticated via Bot API Key."
-  version: "2.1.0"
+  description: "Dedicated API for the Dify.ai agent. Includes Contract management, Payment links, Maintenance requests, and Vehicle registration."
+  version: "2.2.0"
 
 servers:
   - url: <ngrok_url>
@@ -38,13 +35,21 @@ components:
         description: { type: string }
         total_due: { type: number }
         due_date: { type: string, format: "date-time" }
+    
     ActiveContract:
       type: object
+      description: "Details about the tenant's current contract."
       properties:
         contract_id: { type: integer }
         start_date: { type: string, format: "date-time" }
         end_date: { type: string, format: "date-time" }
+        current_end_date: { type: string, format: "date-time", description: "The actual end date considering addendums." }
         rent_amount: { type: number }
+        deposit_amount: { type: number }
+        status: { type: string, enum: [active, pending, expired] }
+        has_file: { type: boolean, description: "If true, the bot should offer to download the contract." }
+        addendum_note: { type: string, description: "Summary of changes from the latest addendum." }
+
     Contact:
       type: object
       properties:
@@ -92,10 +97,10 @@ components:
 security:
   - BotAuth: []
 
-# --- 4. Define the API Endpoints (The "Tools") ---
+# --- API Endpoints ---
 paths:
 
-  # --- TOOL 1: THE ONLY READ TOOL ---
+  # --- TOOL 1: CONTEXT ---
   /api/bot/context:
     get:
       summary: "Get Tenant Context (Bot API)"
@@ -141,6 +146,7 @@ paths:
     post:
       summary: "Create Maintenance Request"
       operationId: "createMaintenanceRequest"
+      tags: [Maintenance]
       requestBody:
         required: true
         content:
@@ -159,11 +165,12 @@ paths:
         '201': { description: "Created" }
         '401': { description: "Unauthorized." }
 
-  # --- TOOL 3: UPDATE MAINTENANCE ---
+  # --- TOOL 3 & 4: UPDATE/DELETE MAINTENANCE ---
   /api/bot/maintenance/{id}:
     put:
       summary: "Update Maintenance Request"
       operationId: "updateMaintenanceRequest"
+      tags: [Maintenance]
       parameters:
         - name: id
           in: path
@@ -185,10 +192,10 @@ paths:
       responses:
         '200': { description: "Updated successfully." }
           
-  # --- TOOL 4: DELETE MAINTENANCE ---
     delete:
       summary: "Delete Maintenance Request"
       operationId: "deleteMaintenanceRequest"
+      tags: [Maintenance]
       parameters:
         - name: id
           in: path
@@ -211,6 +218,7 @@ paths:
     post:
       summary: "Register New Vehicle"
       operationId: "createVehicleRegistration"
+      tags: [Vehicle]
       requestBody:
         required: true
         content:
@@ -234,8 +242,7 @@ paths:
       summary: "Update Vehicle Registration"
       description: "Updates a pending vehicle registration. Only works if status is 'requested'."
       operationId: "updateVehicleRegistration"
-      tags:
-        - Vehicle
+      tags: [Vehicle]
       parameters:
         - name: id
           in: path
@@ -279,31 +286,13 @@ paths:
         '403':
           description: "Forbidden (e.g., registration not owned by tenant)."
 
-  # --- TOOL 7: DELETE VEHICLE REGISTRATION ---
-    # delete:
-    #   summary: "Delete My Registration Request"
-    #   description: "Deletes a registration that is in 'requested' or 'rejected' status."
-    #   operationId: "deleteVehicleRegistration"
-    #   tags:
-    #     - Vehicle
-    #   parameters:
-    #     - name: id
-    #       in: path
-    #       required: true
-    #       description: "The registration_id of the request to delete (Get from `pending_registrations` in context)."
-    #       schema:
-    #         type: integer
-    #   responses:
-    #     '200': { description: "Deleted successfully." }
-
   # --- TOOL 8: CANCEL VEHICLE REGISTRATION ---
   /api/bot/vehicle-registration/{id}/cancel:
     post:
       summary: "Cancel Vehicle Registration"
       description: "Cancels a pending ('requested') vehicle registration."
       operationId: "cancelVehicleRegistration"
-      tags:
-        - Vehicle
+      tags: [Vehicle]
       parameters:
         - name: id
           in: path
@@ -339,6 +328,7 @@ paths:
     get:
       summary: "Get Regulations List"
       operationId: "getAllRegulations"
+      tags: [Regulations]
       responses:
         '200': { description: "Success" }
         '401': { description: "Unauthorized" }
@@ -347,6 +337,7 @@ paths:
     post:
       summary: "Add Regulation Feedback"
       operationId: "addRegulationFeedback"
+      tags: [Regulations]
       parameters:
         - name: id
           in: path
@@ -374,10 +365,9 @@ paths:
   /api/bot/create-payment:
     post:
       summary: "Create Payment Link"
-      description: "Generates a PayOS payment URL for a specific bill ID. Use this when a user wants to pay a bill."
+      description: "Generates a PayOS payment URL for a specific bill ID."
       operationId: "createPaymentLink"
-      tags:
-        - Payment
+      tags: [Payment]
       requestBody:
         required: true
         content:
@@ -388,10 +378,8 @@ paths:
               properties:
                 tenant_user_id:
                   type: integer
-                  description: "The ID of the tenant."
                 bill_id:
                   type: integer
-                  description: "The ID of the bill to pay (Get from bill_history)."
       responses:
         '200':
           description: "Link created."
@@ -404,3 +392,30 @@ paths:
                     type: object
                     properties:
                       checkoutUrl: { type: string }
+
+  # --- DOWNLOAD CONTRACT ---
+  /api/bot/contract/download:
+    post:
+      summary: "Get Contract Download Link"
+      description: "Generates a temporary S3 link for the tenant's active contract PDF."
+      operationId: "getMyContractFile"
+      tags: [Contract]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_user_id]
+              properties:
+                tenant_user_id: { type: integer }
+      responses:
+        '200':
+          description: "Returns the download URL."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+                  message: { type: string }
