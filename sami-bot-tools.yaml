@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
   title: "SAMI Bot Tools"
-  description: "Dedicated API for the Dify.ai agent. Includes Contract management, Payment links, Maintenance requests, and Vehicle registration."
-  version: "2.2.0"
+  description: "Dedicated API for the Dify.ai agent. Updated for Vehicle properties and robust Payment handling."
+  version: "3.1.0"
 
 servers:
   - url: <ngrok_url>
@@ -18,81 +18,83 @@ components:
     # --- Enums ---
     MaintenanceCategoryEnum:
       type: string
-      enum: [plumbing, electrical, hvac, appliance, structural, cleaning, other]
+      enum: [plumbing, electrical, hvac, carpentry, structural, cleaning, other]
+    
     MaintenancePriorityEnum:
       type: string
       enum: [low, normal, high, urgent]
+    
     VehicleTypeEnum:
       type: string
-      enum: [car, motorcycle, truck, van, other]
+      enum: [two_wheeler, four_wheeler]
+      description: "Use 'two_wheeler' for motorbikes/bikes, 'four_wheeler' for cars."
 
-    # --- Response Schemas (for Context) ---
-    UnpaidBill:
+    # --- Response Schemas ---
+    RichContext:
       type: object
       properties:
-        bill_id: { type: integer }
-        bill_number: { type: string }
-        description: { type: string }
-        total_due: { type: number }
-        due_date: { type: string, format: "date-time" }
-    
-    ActiveContract:
-      type: object
-      description: "Details about the tenant's current contract."
-      properties:
-        contract_id: { type: integer }
-        start_date: { type: string, format: "date-time" }
-        end_date: { type: string, format: "date-time" }
-        current_end_date: { type: string, format: "date-time", description: "The actual end date considering addendums." }
-        rent_amount: { type: number }
-        deposit_amount: { type: number }
-        status: { type: string, enum: [active, pending, expired] }
-        has_file: { type: boolean, description: "If true, the bot should offer to download the contract." }
-        addendum_note: { type: string, description: "Summary of changes from the latest addendum." }
-
-    Contact:
-      type: object
-      properties:
-        role: { type: string, enum: [Manager, Owner] }
-        name: { type: string }
-        phone: { type: string }
-    PendingMaintenance:
-      type: object
-      properties:
-        request_id: { type: integer }
-        title: { type: string }
-        status: { type: string }
-        created_at: { type: string, format: "date-time" }
-    PendingRegistration:
-      type: object
-      properties:
-        registration_id: { type: integer }
-        status: { type: string }
-        type: { type: string }
-        license_plate: { type: string }
-    ActiveVehicle:
-      type: object
-      properties:
-        vehicle_id: { type: integer }
-        type: { type: string }
-        license_plate: { type: string }
-        brand: { type: string }
-    RegulationTitle:
-      type: object
-      properties:
-        regulation_id: { type: integer }
-        title: { type: string }
-        status: { type: string }
-        target: { type: string, enum: [all, tenants, management] }
-        effective_date: { type: string, format: "date-time" }
-    CreateFeedback:
-      type: object
-      properties:
-        comment:
-          type: string
-          description: "Nội dung feedback của người dùng."
-      required:
-        - comment
+        meta:
+          type: object
+          properties:
+            query_time: { type: string }
+            tenant_name: { type: string }
+        residency:
+          type: object
+          properties:
+            active_contracts_count: { type: integer }
+            spaces:
+              type: array
+              items:
+                type: object
+                properties:
+                  room_number: { type: string }
+                  building_name: { type: string }
+                  status: { type: string }
+        finance:
+          type: object
+          properties:
+            unpaid_bills_count: { type: integer }
+            history:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  type: { type: string }
+                  amount: { type: number }
+                  status: { type: string }
+                  due: { type: string }
+        maintenance:
+          type: object
+          properties:
+            history:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  title: { type: string }
+                  status: { type: string }
+                  priority: { type: string }
+                  created_at: { type: string }
+        vehicles:
+          type: object
+          properties:
+            pending_registrations:
+              type: array
+              items:
+                type: object
+                properties:
+                  license_plate: { type: string }
+                  status: { type: string }
+            active_vehicles:
+              type: array
+              items:
+                type: object
+                properties:
+                  plate: { type: string }
+                  brand: { type: string }
+                  parking_slot: { type: string }
 
 security:
   - BotAuth: []
@@ -100,46 +102,28 @@ security:
 # --- API Endpoints ---
 paths:
 
-  # --- TOOL 1: CONTEXT ---
+  # --- TOOL 1: CONTEXT (The Brain) ---
   /api/bot/context:
     get:
-      summary: "Get Tenant Context (Bot API)"
-      description: "CRITICAL: Call this tool FIRST. Gets all data about the tenant specified by `tenant_user_id`."
+      summary: "Get Tenant Context"
+      description: "CRITICAL: Call this tool FIRST. Retrieves identity, rooms, bills, maintenance history, and vehicle status."
       operationId: "getTenantContext"
-      tags:
-        - Tenant Info
+      tags: [Context]
       parameters:
         - name: tenant_user_id
           in: query
           required: true
-          description: "The ID of the tenant chatting with the bot."
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
         '200':
-          description: "Successful retrieval."
+          description: "Success"
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      tenant_user_id: { type: integer }
-                      tenant_name: { type: string }
-                      room_id: { type: integer }
-                      room_number: { type: string }
-                      current_date: { type: string, format: "date-time" }
-                      unpaid_bills: { type: array, items: { $ref: '#/components/schemas/UnpaidBill' } }
-                      active_contract: { $ref: '#/components/schemas/ActiveContract' }
-                      contacts: { type: array, items: { $ref: '#/components/schemas/Contact' } }
-                      pending_maintenance: { type: array, items: { $ref: '#/components/schemas/PendingMaintenance' } }
-                      pending_registrations: { type: array, items: { $ref: '#/components/schemas/PendingRegistration' } }
-                      active_vehicles: { type: array, items: { $ref: '#/components/schemas/ActiveVehicle' } }
-        '401':
-          description: "Unauthorized. The key is missing or invalid."
+                  data: { $ref: '#/components/schemas/RichContext' }
 
   # --- TOOL 2: CREATE MAINTENANCE ---
   /api/bot/maintenance/create:
@@ -160,15 +144,14 @@ paths:
                 description: { type: string }
                 category: { $ref: '#/components/schemas/MaintenanceCategoryEnum' }
                 priority: { $ref: '#/components/schemas/MaintenancePriorityEnum' }
-                room_id: { type: integer }
       responses:
         '201': { description: "Created" }
-        '401': { description: "Unauthorized." }
 
-  # --- TOOL 3 & 4: UPDATE/DELETE MAINTENANCE ---
+  # --- TOOL 3: UPDATE MAINTENANCE ---
   /api/bot/maintenance/{id}:
     put:
       summary: "Update Maintenance Request"
+      description: "Updates a pending request."
       operationId: "updateMaintenanceRequest"
       tags: [Maintenance]
       parameters:
@@ -187,11 +170,11 @@ paths:
                 tenant_user_id: { type: integer }
                 title: { type: string }
                 description: { type: string }
-                category: { $ref: '#/components/schemas/MaintenanceCategoryEnum' }
                 priority: { $ref: '#/components/schemas/MaintenancePriorityEnum' }
       responses:
-        '200': { description: "Updated successfully." }
-          
+        '200': { description: "Updated" }
+        
+  # --- TOOL 4: DELETE MAINTENANCE ---
     delete:
       summary: "Delete Maintenance Request"
       operationId: "deleteMaintenanceRequest"
@@ -211,12 +194,13 @@ paths:
               properties:
                 tenant_user_id: { type: integer }
       responses:
-        '200': { description: "Deleted successfully." }
+        '200': { description: "Deleted" }
 
-  # --- TOOL 5: CREATE VEHICLE REGISTRATION ---
+  # --- TOOL 5: REGISTER VEHICLE ---
   /api/bot/vehicle-registration/create:
     post:
-      summary: "Register New Vehicle"
+      summary: "Register Vehicle"
+      description: "Create a new parking request. Ask for Plate, Brand, and Color."
       operationId: "createVehicleRegistration"
       tags: [Vehicle]
       requestBody:
@@ -230,114 +214,20 @@ paths:
                 tenant_user_id: { type: integer }
                 type: { $ref: '#/components/schemas/VehicleTypeEnum' }
                 license_plate: { type: string }
-                brand: { type: string }
-                color: { type: string }
+                brand: { type: string, description: "Vehicle Brand (e.g. Honda, Toyota)" }
+                color: { type: string, description: "Vehicle Color" }
+                start_date: { type: string, format: date, description: "YYYY-MM-DD" }
+                end_date: { type: string, format: date, description: "Optional YYYY-MM-DD" }
                 note: { type: string }
       responses:
-        '201': { description: "Registration request created." }
+        '201': { description: "Created" }
 
-  # --- TOOL 6: UPDATE VEHICLE REGISTRATION ---
+  # --- TOOL 6: UPDATE REGISTRATION ---
   /api/bot/vehicle-registration/{id}:
     put:
-      summary: "Update Vehicle Registration"
-      description: "Updates a pending vehicle registration. Only works if status is 'requested'."
+      summary: "Update Registration"
       operationId: "updateVehicleRegistration"
       tags: [Vehicle]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The registration assignment_id to update."
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: 
-                - tenant_user_id
-              properties:
-                tenant_user_id:
-                  type: integer
-                  description: "The ID of the tenant attempting to update the request."
-                type:
-                  $ref: '#/components/schemas/VehicleTypeEnum'
-                license_plate:
-                  type: string
-                brand:
-                  type: string
-                color:
-                  type: string
-                note:
-                  type: string
-                start_date:
-                  type: string
-                  format: date
-                end_date:
-                  type: string
-                  format: date
-      responses:
-        '200':
-          description: "Updated successfully."
-        '400':
-          description: "Validation error or invalid state."
-        '403':
-          description: "Forbidden (e.g., registration not owned by tenant)."
-
-  # --- TOOL 8: CANCEL VEHICLE REGISTRATION ---
-  /api/bot/vehicle-registration/{id}/cancel:
-    post:
-      summary: "Cancel Vehicle Registration"
-      description: "Cancels a pending ('requested') vehicle registration."
-      operationId: "cancelVehicleRegistration"
-      tags: [Vehicle]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The registration assignment_id to cancel."
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - tenant_user_id
-              properties:
-                tenant_user_id:
-                  type: integer
-                  description: "The ID of the tenant cancelling the request."
-                cancellation_reason:
-                  type: string
-                  description: "Reason for cancellation (optional)."
-      responses:
-        '200':
-          description: "Cancelled successfully."
-        '400':
-          description: "Validation error or invalid state."
-        '403':
-          description: "Forbidden."
-
-  # --- REGULATIONS Tools ---
-  /api/bot/regulations:
-    get:
-      summary: "Get Regulations List"
-      operationId: "getAllRegulations"
-      tags: [Regulations]
-      responses:
-        '200': { description: "Success" }
-        '401': { description: "Unauthorized" }
-
-  /api/bot/regulation/{id}/feedback:
-    post:
-      summary: "Add Regulation Feedback"
-      operationId: "addRegulationFeedback"
-      tags: [Regulations]
       parameters:
         - name: id
           in: path
@@ -349,23 +239,62 @@ paths:
           application/json:
             schema:
               type: object
-              required: [tenant_user_id, comment]
+              required: [tenant_user_id]
               properties:
                 tenant_user_id: { type: integer }
-                comment: { type: string }
+                type: { $ref: '#/components/schemas/VehicleTypeEnum' }
+                license_plate: { type: string }
+                brand: { type: string }
+                color: { type: string }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
       responses:
-        '201':
-          description: "Feedback added successfully."
-        '400':
-          description: "Invalid input."
-        '401':
-          description: "Unauthorized."
+        '200': { description: "Updated" }
 
-  # --- PAYMENT LINK ---
+  # --- TOOL 7: CANCEL REGISTRATION ---
+  /api/bot/vehicle-registration/{id}/cancel:
+    post:
+      summary: "Cancel Registration"
+      operationId: "cancelVehicleRegistration"
+      tags: [Vehicle]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenant_user_id]
+              properties:
+                tenant_user_id: { type: integer }
+                cancellation_reason: { type: string }
+      responses:
+        '200': { description: "Cancelled" }
+
+  # --- TOOL 8: GET REGULATIONS ---
+  /api/bot/regulations:
+    get:
+      summary: "Get Regulations"
+      description: "Returns general and building-specific regulations for this tenant."
+      operationId: "getRegulations"
+      tags: [Regulations]
+      parameters:
+        - name: tenant_user_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: "Success" }
+
+  # --- TOOL 9: CREATE PAYMENT LINK ---
   /api/bot/create-payment:
     post:
       summary: "Create Payment Link"
-      description: "Generates a PayOS payment URL for a specific bill ID."
+      description: "Generates PayOS checkout URL."
       operationId: "createPaymentLink"
       tags: [Payment]
       requestBody:
@@ -376,13 +305,15 @@ paths:
               type: object
               required: [tenant_user_id, bill_id]
               properties:
-                tenant_user_id:
-                  type: integer
-                bill_id:
-                  type: integer
+                tenant_user_id: { type: integer }
+                bill_id: 
+                  type: array
+                  items: 
+                    type: integer
+                  description: "Array of Bill IDs to pay. Example: [10] or [10, 15]."
       responses:
-        '200':
-          description: "Link created."
+        '200': 
+          description: "Success"
           content:
             application/json:
               schema:
@@ -393,12 +324,12 @@ paths:
                     properties:
                       checkoutUrl: { type: string }
 
-  # --- DOWNLOAD CONTRACT ---
+  # --- TOOL 10: DOWNLOAD CONTRACT ---
   /api/bot/contract/download:
     post:
-      summary: "Get Contract Download Link"
-      description: "Generates a temporary S3 link for the tenant's active contract PDF."
-      operationId: "getMyContractFile"
+      summary: "Get Contract File"
+      description: "Generates S3 link. Handles multiple contracts via 'room_number' parameter."
+      operationId: "getContractFile"
       tags: [Contract]
       requestBody:
         required: true
@@ -409,13 +340,18 @@ paths:
               required: [tenant_user_id]
               properties:
                 tenant_user_id: { type: integer }
+                room_number: { type: string, description: "Optional: Specify room if tenant has multiple contracts" }
       responses:
-        '200':
-          description: "Returns the download URL."
+        '200': 
+          description: "Success"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  url: { type: string }
-                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      type: { type: string, enum: [single_link, multiple_choices] }
+                      download_url: { type: string }
+                      options: { type: array }
